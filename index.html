@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Amway Business</title>
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/007AFF/FFFFFF?text=Amway">
+    
+    <style>
+        :root { --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
+        body { font-family: -apple-system, system-ui; background: var(--ios-bg); margin: 0; padding: env(safe-area-inset-top) 20px 20px 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 16px; background: var(--ios-blue); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 17px; }
+        .cliente-row { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .delete-btn { background: var(--ios-red); padding: 8px 12px; border-radius: 8px; font-size: 12px; width: auto; margin: 0; }
+        .info h4 { margin: 0; font-size: 17px; }
+        .info p { margin: 2px 0 0; color: #8E8E93; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h2>Mis Clientes Amway</h2>
+
+    <div class="card">
+        <input type="text" id="nombre" placeholder="Nombre del cliente">
+        <input type="text" id="interes" placeholder="Producto/Interés">
+        <input type="datetime-local" id="fecha">
+        <button onclick="guardar()">Guardar en la Nube</button>
+    </div>
+
+    <div id="listaClientes"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc } 
+        from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        // CONFIGURACIÓN DE FIREBASE (Pega aquí lo que copiaste de la consola de Firebase)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO_ID",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "TU_ID",
+            appId: "TU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const clientesRef = collection(db, "clientes");
+
+        // GUARDAR
+        window.guardar = async () => {
+            const nombre = document.getElementById('nombre').value;
+            const interes = document.getElementById('interes').value;
+            const fecha = document.getElementById('fecha').value;
+            if(!nombre) return alert("Nombre obligatorio");
+
+            await addDoc(clientesRef, { nombre, interes, fecha, creado: Date.now() });
+            document.getElementById('nombre').value = "";
+            document.getElementById('interes').value = "";
+        };
+
+        // LEER EN TIEMPO REAL
+        onSnapshot(clientesRef, (snapshot) => {
+            const listaDiv = document.getElementById('listaClientes');
+            listaDiv.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const c = docSnap.data();
+                listaDiv.innerHTML += `
+                    <div class="cliente-row">
+                        <div class="info">
+                            <h4>${c.nombre}</h4>
+                            <p>${c.interes} • ${c.fecha ? c.fecha.replace('T', ' ') : 'Sin cita'}</p>
+                        </div>
+                        <button class="delete-btn" onclick="eliminar('${docSnap.id}')">Borrar</button>
+                    </div>
+                `;
+            });
+        });
+
+        window.eliminar = async (id) => {
+            if(confirm("¿Eliminar cliente?")) await deleteDoc(doc(db, "clientes", id));
+        };
+    </script>
+</body>
+</html>
